@@ -1,0 +1,23 @@
+{
+  "name": "ideavault_server",
+  "version": "0.0.1",
+  "description": "A Task",
+  "homepage": "https://github.com/Mahathir-Mohammod/ideavault_server#readme",
+  "bugs": {
+    "url": "https://github.com/Mahathir-Mohammod/ideavault_server/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mahathir-Mohammod/ideavault_server.git"
+  },
+  "license": "ISC",
+  "author": "Mahathir-Mohammod",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
