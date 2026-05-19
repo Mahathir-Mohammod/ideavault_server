@@ -52,4 +52,4 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 
-module.exports = { auth, client };
+module.exports = { auth, client, db };

@@ -4,6 +4,7 @@ const express = require("express");
 const { toNodeHandler, fromNodeHeaders } = require("better-auth/node");
 const cors = require("cors");
 const { auth } = require("./auth");
+const ideasRouter = require("./routes/ideas");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -18,6 +19,9 @@ app.use(
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 app.use(express.json());
+
+app.use("/api/ideas", ideasRouter);
+
 app.get("/", (_req, res) => {
   res.send("Server is running!");
 });
