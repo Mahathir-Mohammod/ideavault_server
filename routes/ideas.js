@@ -378,7 +378,45 @@ router.put("/:id/comments/:commentId", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Idea or comment not found" });
     }
 
-   
+    // Find the comment and check ownership
+    const comment = idea.comments.find(
+      (c) => c._id.toString() === commentId
+    );
+
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    if (comment.userId !== req.userId) {
+      return res.status(403).json({ error: "You can only edit your own comments" });
+    }
+
+    const updatedText = text.trim().slice(0, 500);
+
+    await ideasCollection().updateOne(
+      { _id: new ObjectId(id), "comments._id": new ObjectId(commentId) },
+      {
+        $set: {
+          "comments.$.text": updatedText,
+          "comments.$.updatedAt": new Date(),
+        },
+      }
+    );
+
+    return res.json({
+      success: true,
+      comment: {
+        ...comment,
+        text: updatedText,
+        updatedAt: new Date(),
+      },
+    });
+  } catch (err) {
+    console.error("PUT /api/ideas/:id/comments/:commentId error:", err);
+    return res.status(500).json({ error: "Failed to update comment" });
+  }
+});
+
 /* DELETE /:id Delete own comment */
 router.delete("/:id/comments/:commentId", requireAuth, async (req, res) => {
   try {
