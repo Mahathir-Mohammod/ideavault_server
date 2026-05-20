@@ -150,6 +150,49 @@ router.get("/my", requireAuth, async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch your ideas" });
   }
 });
+router.get("/interacted", requireAuth, async (req, res) => {
+  try {
+    const ideas = await ideasCollection()
+      .find(
+        { "comments.userId": req.userId },
+        { projection: { "comments.$": 1, title: 1, shortDesc: 1, category: 1, tags: 1, createdAt: 1, updatedAt: 1, userId: 1 } }
+      )
+      .sort({ updatedAt: -1 })
+      .toArray();
+
+    const populated = await Promise.all(
+      ideas.map(async (idea) => {
+        // Fetch the full idea to get all comments
+        const full = await ideasCollection().findOne(
+          { _id: idea._id },
+          { projection: { comments: 1 } }
+        );
+        const userComments = (full?.comments || []).filter(
+          (c) => c.userId === req.userId
+        );
+
+        // Look up the names of other commenters on this idea
+        return {
+          _id: idea._id,
+          title: idea.title,
+          shortDesc: idea.shortDesc,
+          category: idea.category,
+          tags: idea.tags,
+          createdAt: idea.createdAt,
+          updatedAt: idea.updatedAt,
+          userId: idea.userId,
+          userComments, 
+          commentCount: (full?.comments || []).length,
+        };
+      })
+    );
+
+    return res.json({ success: true, ideas: populated });
+  } catch (err) {
+    console.error("GET /api/ideas/interacted error:", err);
+    return res.status(500).json({ error: "Failed to fetch interacted ideas" });
+  }
+});
 
 router.put("/:id", requireAuth, async (req, res) => {
   try {
@@ -224,5 +267,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
     return res.status(500).json({ error: "Failed to delete idea" });
   }
 });
+
+
 
 module.exports = router;
