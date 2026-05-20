@@ -285,6 +285,34 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Idea not found" });
     }
 
-    
+    // Look up the author's name
+    let authorName = "Unknown";
+    try {
+      const user = await db.collection("user").findOne(
+        { _id: idea.userId },
+        { projection: { name: 1 } }
+      );
+      if (user && user.name) {
+        authorName = user.name;
+      }
+    } catch (err) {
+      console.error("Failed to fetch author name:", err.message);
+    }
+
+    return res.json({
+      success: true,
+      idea: {
+        ...idea,
+        authorName,
+        comments: idea.comments || [],
+      },
+    });
+  } catch (err) {
+    console.error("GET /api/ideas/:id error:", err);
+    return res.status(500).json({ error: "Failed to fetch idea" });
+  }
+});
+ console.log("Loaded ideas routes");
+
 
 module.exports = router;
