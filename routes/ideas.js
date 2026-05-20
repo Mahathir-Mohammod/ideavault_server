@@ -109,6 +109,12 @@ router.get("/", async (req, res) => {
       filter.category = req.query.category;
     }
 
+    // Case-insensitive $regex search on title
+    if (req.query.search) {
+      const escaped = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.title = { $regex: escaped, $options: "i" };
+    }
+
     const [ideas, total] = await Promise.all([
       ideasCollection()
         .find(filter)
