@@ -312,7 +312,114 @@ router.get("/:id", async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch idea" });
   }
 });
- console.log("Loaded ideas routes");
+/* POST /:id Add a comment */
+router.post("/:id/comments", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
 
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({ error: "Comment text is required" });
+    }
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid idea ID" });
+    }
+
+    const idea = await ideasCollection().findOne({
+      _id: new ObjectId(id),
+    });
+
+    if (!idea) {
+      return res.status(404).json({ error: "Idea not found" });
+    }
+
+    const comment = {
+      _id: new ObjectId(),
+      userId: req.userId,
+      userName: req.session.user.name || "Unknown",
+      text: text.trim().slice(0, 500),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await ideasCollection().updateOne(
+      { _id: new ObjectId(id) },
+      { $push: { comments: comment } }
+    );
+
+    return res.status(201).json({ success: true, comment });
+  } catch (err) {
+    console.error("POST /api/ideas/:id/comments error:", err);
+    return res.status(500).json({ error: "Failed to add comment" });
+  }
+});
+
+/* PUT /:id Edit own comment */
+router.put("/:id/comments/:commentId", requireAuth, async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const { text } = req.body;
+
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({ error: "Comment text is required" });
+    }
+
+    if (!ObjectId.isValid(id) || !ObjectId.isValid(commentId)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    const idea = await ideasCollection().findOne({
+      _id: new ObjectId(id),
+      "comments._id": new ObjectId(commentId),
+    });
+
+    if (!idea) {
+      return res.status(404).json({ error: "Idea or comment not found" });
+    }
+
+   
+/* DELETE /:id Delete own comment */
+router.delete("/:id/comments/:commentId", requireAuth, async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+
+    if (!ObjectId.isValid(id) || !ObjectId.isValid(commentId)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    const idea = await ideasCollection().findOne({
+      _id: new ObjectId(id),
+      "comments._id": new ObjectId(commentId),
+    });
+
+    if (!idea) {
+      return res.status(404).json({ error: "Idea or comment not found" });
+    }
+
+    // Find the comment and check ownership
+    const comment = idea.comments.find(
+      (c) => c._id.toString() === commentId
+    );
+
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    if (comment.userId !== req.userId) {
+      return res.status(403).json({ error: "You can only delete your own comments" });
+    }
+
+    await ideasCollection().updateOne(
+      { _id: new ObjectId(id) },
+      { $pull: { comments: { _id: new ObjectId(commentId) } } }
+    );
+
+    return res.json({ success: true, message: "Comment deleted" });
+  } catch (err) {
+    console.error("DELETE /api/ideas/:id/comments/:commentId error:", err);
+    return res.status(500).json({ error: "Failed to delete comment" });
+  }
+});
 
 module.exports = router;
