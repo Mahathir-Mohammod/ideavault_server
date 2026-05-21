@@ -1,6 +1,6 @@
-const { betterAuth } = require("better-auth");
-const { mongodbAdapter } = require("better-auth/adapters/mongodb");
-const { MongoClient } = require("mongodb");
+import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { MongoClient } from "mongodb";
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/ideavault";
 
@@ -36,6 +36,7 @@ const auth = betterAuth({
     },
   },
 });
+
 process.on("SIGINT", async () => {
   try {
     await client.close();
@@ -52,4 +53,4 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 
-module.exports = { auth, client, db };
+export { auth, client, db };

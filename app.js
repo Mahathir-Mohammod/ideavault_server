@@ -1,10 +1,9 @@
-require("dotenv").config();
-
-const express = require("express");
-const { toNodeHandler, fromNodeHeaders } = require("better-auth/node");
-const cors = require("cors");
-const { auth } = require("./auth");
-const ideasRouter = require("./routes/ideas");
+import "dotenv/config";
+import express from "express";
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import cors from "cors";
+import { auth } from "./auth.js";
+import ideasRouter from "./routes/ideas.js";
 
 const app = express();
 
@@ -42,4 +41,4 @@ app.get("/api/me", async (req, res) => {
   }
 });
 
-module.exports = app; // ← key line
+export default app;

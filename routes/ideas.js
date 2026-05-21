@@ -1,7 +1,7 @@
-const express = require("express");
-const { fromNodeHeaders } = require("better-auth/node");
-const { auth, db } = require("../auth");
-const { ObjectId } = require("mongodb");
+import express from "express";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth, db } from "../auth.js";
+import { ObjectId } from "mongodb";
 
 const router = express.Router();
 const ideasCollection = () => db.collection("ideas");
@@ -497,4 +497,4 @@ router.delete("/:id/comments/:commentId", requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
