@@ -194,6 +194,43 @@ router.get("/interacted", requireAuth, async (req, res) => {
   }
 });
 
+/* GET /trending */
+router.get("/trending", async (req, res) => {
+  try {
+    const pipeline = [
+      {
+        $addFields: {
+          commentCount: { $size: { $ifNull: ["$comments", []] } },
+        },
+      },
+      { $sort: { commentCount: -1, createdAt: -1 } },
+      { $limit: 6 },
+      { $project: { comments: 0 } },
+    ];
+
+    const ideas = await ideasCollection().aggregate(pipeline).toArray();
+
+    const enriched = await Promise.all(
+      ideas.map(async (idea) => {
+        let authorName = "Unknown";
+        try {
+          const user = await db.collection("user").findOne(
+            { _id: idea.userId },
+            { projection: { name: 1 } }
+          );
+          if (user && user.name) authorName = user.name;
+        } catch (_) { /* fallback to "Unknown" */ }
+        return { ...idea, authorName };
+      })
+    );
+
+    return res.json({ success: true, ideas: enriched });
+  } catch (err) {
+    console.error("GET /api/ideas/trending error:", err);
+    return res.status(500).json({ error: "Failed to fetch trending ideas" });
+  }
+});
+
 router.put("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
