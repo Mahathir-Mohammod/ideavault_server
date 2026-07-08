@@ -4,6 +4,7 @@ import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import cors from "cors";
 import { auth } from "./auth.js";
 import ideasRouter from "./routes/ideas.js";
+import adminRouter from "./routes/admin.js";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json());
 
 app.use("/api/ideas", ideasRouter);
+app.use("/api/admin", adminRouter);
 
 app.get("/", (_req, res) => {
   res.send("Server is running!");
