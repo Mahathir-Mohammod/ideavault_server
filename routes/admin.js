@@ -152,4 +152,90 @@ router.delete("/users/:id", async (req, res) => {
   }
 });
 
+// ──────────────────────────────────────────────
+// GET /api/admin/ideas — Paginated ideas list
+// ──────────────────────────────────────────────
+router.get("/ideas", async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+    const skip = Math.max(parseInt(req.query.skip, 10) || 0, 0);
+    const search = req.query.search?.trim();
+
+    const filter = {};
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.title = { $regex: escaped, $options: "i" };
+    }
+
+    const [ideas, total] = await Promise.all([
+      db
+        .collection("ideas")
+        .find(filter)
+        .project({
+          title: 1,
+          shortDesc: 1,
+          category: 1,
+          tags: 1,
+          userId: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          commentCount: { $size: { $ifNull: ["$comments", []] } },
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+      db.collection("ideas").countDocuments(filter),
+    ]);
+
+    // Enrich with author names
+    const enriched = await Promise.all(
+      ideas.map(async (idea) => {
+        let authorName = "Unknown";
+        try {
+          const user = await db.collection("user").findOne(
+            { _id: idea.userId },
+            { projection: { name: 1 } },
+          );
+          if (user?.name) authorName = user.name;
+        } catch (_) {
+          /* fallback */
+        }
+        return { ...idea, authorName };
+      }),
+    );
+
+    return res.json({ success: true, ideas: enriched, total, limit, skip });
+  } catch (err) {
+    console.error("GET /api/admin/ideas error:", err);
+    return res.status(500).json({ error: "Failed to fetch ideas" });
+  }
+});
+
+// ──────────────────────────────────────────────
+// DELETE /api/admin/ideas/:id — Delete any idea
+// ──────────────────────────────────────────────
+router.delete("/ideas/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid idea ID" });
+    }
+
+    const idea = await db.collection("ideas").findOneAndDelete({
+      _id: new ObjectId(id),
+    });
+
+    if (!idea) {
+      return res.status(404).json({ error: "Idea not found" });
+    }
+
+    return res.json({ success: true, message: "Idea deleted" });
+  } catch (err) {
+    console.error("DELETE /api/admin/ideas/:id error:", err);
+    return res.status(500).json({ error: "Failed to delete idea" });
+  }
+});
+
 export default router;
